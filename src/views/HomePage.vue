@@ -1,7 +1,7 @@
 <template>
   <div class="home">
-      <div id="indexPage">
-    <nav class="navbar is-fixed-top is-dark" role="navigation" aria-label="main navigation">
+  <div id="indexPage">
+    <!-- <nav class="navbar is-fixed-top is-dark" role="navigation" aria-label="main navigation">
       <div class="navbar-brand">
         <a class="navbar-item logo" href="#">
           UIStock
@@ -12,37 +12,25 @@
           <a class="navbar-item is-tab is-active">Home</a>
         </div>
       </div>
-    </nav>
-
-    <div class="column is-4 is-offset-4">
-      <form>
-        <div class="field">
+    </nav> -->
+    <div class="columns">
+      <div class="column is-4 is-offset-1">
+        <form>
+          <div class="field">
             <div class="control">
-                <input class="input is-large" type="email" placeholder="Your Email" autofocus="">
+              <input class="input is-large" type="text" v-model="name" placeholder="Your name" autofocus="">
             </div>
-        </div>
+          </div>
 
-        <div class="field">
-            <div class="control">
-                <input class="input is-large" type="password" placeholder="Your Password">
-            </div>
-        </div>
-        <div class="field">
-          <label class="checkbox">
-            <input type="checkbox">
-            Remember me
-          </label>
-        </div>
-        <button class="button is-block is-info is-large is-fullwidth">Login</button>
-      </form>
-    </div>
-
-    <div class="free-collections section" >
-      <div class="container">
-        <div class="has-text-centered title">
-          <h2>Find more images</h2>
-        </div>
-
+          <div class="field">
+              <div class="control">
+                  <input class="input is-large" type="email" v-model="email" placeholder="Your Email" autofocus="">
+              </div>
+          </div>
+          <button class="button is-block is-info is-large is-fullwidth" @click="gettoken">Get Token</button>
+        </form>
+      </div>
+      <div class="column is-4 is-offset-1">
         <div class="file has-name" style="margin:10px;">
           <label class="file-label">
             <input class="file-input" type="file" name="resume" v-on:change="uploadPhoto()">
@@ -58,16 +46,26 @@
 
             </span>
           </label>
-          <a class="button" style="margin-left: 10px;">Button</a>
+          <a class="button" style="margin-left: 10px;" v-on:click="submitFile()">Post image</a>
+        </div>
+      </div>
+    </div>
+    
+
+    <div class="free-collections section" >
+      <div class="container">
+        <div class="has-text-centered title">
+          <h2>Find more images</h2>
         </div>
 
         <div class="columns collections-box">
-          <ListImage
+          <!-- <ListImage
             v-for = "image in images"
             v-bind:image = "image"
             :key = "image.id"
           >
-        </ListImage>
+        </ListImage> -->
+        
         </div>
       </div>
     </div>
@@ -83,37 +81,68 @@
 
 <script>
 // import ListImage from '@/components/ListImage.vue'
+import axios from 'axios'
 
 export default {
   name: 'homePage',
-  components : {
-    ListImage
-  },
   data () {
     return {
-      images : [
-      {
-        id: 1,
-        image: './assets/images/plant-photography-fruit-leaf-flower-orange-928361-pxhere.com.jpg',
-        title: 'Fruit Leaf Flower Orange',
-        price: '120000'
-      }, {
-        id: 2,
-        image: './assets/images/amazing-autumn-dawn-131723.jpg',
-        title: 'Autumn Dawn',
-        price: '100000'
-      }, {
-        id: 3,
-        image: './assets/images/person-people-girl-woman-photography-female-1387835-pxhere.com.jpg',
-        title: 'Beauty Pink',
-        price: '80000'
-      }, {
-        id: 4,
-        image: './assets/images/snow-winter-warm-sweet-morning-cup-648807-pxhere.com.jpg',
-        title: 'Winter Warm',
-        price: '130000'
+      name: '',
+      email:'',
+      images:[],
+      file: ''
+    }
+  },
+  methods : {
+    
+    gettoken () {
+      let self = this
+      let account = {
+        name: this.name,
+        email: this.email
       }
-    ]
+
+      axios
+          .post('http://35.197.135.159/request-token', account)
+          .then(response => {
+            let token = response.data.uuid
+            localStorage.setItem('authorization', token) 
+            axios
+              .get('http://35.197.135.159/image',{
+                headers: { Authorization: token }
+              })
+              .then(response => {
+                self.images.push(response.data.images)
+                console.log(self.images)
+              })
+              .catch(err => {
+                  alert(err)
+              })           
+          })
+    },
+    
+    uploadPhoto(event) {
+      this.image = event.target.files[0]
+    },
+
+    submitFile () {
+      let formData = new FormData();
+      formData.append('photo', this.file);
+      let token = localStorage.getItem('authorization')
+
+      if(token) {
+        if(this.file!=''){
+							axios.post('http://35.197.135.159/image', formData, {
+									headers: {
+											authorization: token
+									}
+							}).then(response => {
+									console.log(response)
+							}).catch(err => {
+									alert(err)
+							})
+            }
+      }
     }
   }
 }
